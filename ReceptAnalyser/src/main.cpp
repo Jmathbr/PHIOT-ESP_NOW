@@ -16,6 +16,9 @@ int amostrasLimit=5;
 int lastTime = 0;
 unsigned long timestep = 20;
 
+int lastTimeWD = 0;
+int timestepWD = 6000;
+
 typedef struct struct_message {
     int id;
     int temp; // must be unique for each sender board
@@ -64,8 +67,8 @@ void setup() {
 
 
 void loop() {
-  //int lastTimeWD = 0;
-  //int timestepWD = 3000;
+
+  bool VerifySensorOff = false;
   StaticJsonDocument<1024> doc;
   Serial.println();
   for (int amostras = 0; amostras <= amostrasLimit; amostras++){
@@ -82,18 +85,23 @@ void loop() {
           lastTime = millis(); 
         }
         // Verificar se um esp foi desconectado e pular para o proximo caso seja verdade
-        //if ((millis() - lastTimeWD) > timestepWD ){
-        //  doc["Temp"][auxboard][amostras] = nullptr;
-        //  doc["Dist"][auxboard][amostras] = nullptr;
-        //  auxboard++;
-        //  break;
-        //}
+        if ((millis() - lastTimeWD) > timestepWD){
+          Serial.println("TIME EXPIRED");
+          doc["Temp"][auxboard][amostras] = nullptr;
+          doc["Dist"][auxboard][amostras] = nullptr;
+          auxboard++;
+          VerifySensorOff = true;
+          break;
+        }
       }
-      //lastTimeWD = millis();
+      lastTimeWD = millis();
     }
   }
   serializeJson(doc, Serial);
   serializeJson(doc, data);
   serializeJsonPretty(doc, Serial);
   
+  if (VerifySensorOff == (true)){
+    ESP.restart();
+  } 
 }
